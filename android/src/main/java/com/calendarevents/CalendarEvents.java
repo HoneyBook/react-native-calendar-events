@@ -8,11 +8,10 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.SharedPreferences;
 import android.Manifest;
-import android.database.DatabaseUtils;
 import android.net.Uri;
 import android.provider.CalendarContract;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import android.database.Cursor;
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -98,6 +97,16 @@ public class CalendarEvents extends ReactContextBaseJavaModule {
         return writePermission == PackageManager.PERMISSION_GRANTED &&
                 readPermission == PackageManager.PERMISSION_GRANTED;
     }
+    
+    private boolean shouldShowRequestPermissionRationale() {
+                Activity currentActivity = getCurrentActivity();
+
+        boolean permission = ActivityCompat.shouldShowRequestPermissionRationale(currentActivity,
+                    Manifest.permission.WRITE_CALENDAR);
+
+        return permission;
+    }
+
     //endregion
 
     private WritableNativeArray findEventCalendars() {
@@ -239,6 +248,22 @@ public class CalendarEvents extends ReactContextBaseJavaModule {
 
         Uri calendarUri = cr.insert(calendarsUri, calendarValues);
         return Integer.parseInt(calendarUri.getLastPathSegment());
+    }
+
+    private boolean removeCalendar(String calendarID) {
+        int rows = 0;
+
+        try {
+            ContentResolver cr = reactContext.getContentResolver();
+
+            Uri uri = ContentUris.withAppendedId(CalendarContract.Calendars.CONTENT_URI, (long) Integer.parseInt(calendarID));
+            rows = cr.delete(uri, null, null);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return rows > 0;
     }
 
     private WritableNativeArray findAttendeesByEventId(String eventID) {
@@ -425,8 +450,13 @@ public class CalendarEvents extends ReactContextBaseJavaModule {
     private int addEvent(String title, ReadableMap details, ReadableMap options) throws ParseException {
         String dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
         SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
-        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
-
+        boolean skipTimezone = false;
+        if(details.hasKey("skipAndroidTimezone") && details.getBoolean("skipAndroidTimezone")){
+            skipTimezone = true;
+        }
+        if(!skipTimezone){
+            sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+        }
         ContentResolver cr = reactContext.getContentResolver();
         ContentValues eventValues = new ContentValues();
 
@@ -868,8 +898,23 @@ public class CalendarEvents extends ReactContextBaseJavaModule {
     //region Availability
     private WritableNativeArray calendarAllowedAvailabilitiesFromDBString(String dbString) {
         WritableNativeArray availabilitiesStrings = new WritableNativeArray();
-        for(String availabilityId: dbString.split(",")) {
-            switch(Integer.parseInt(availabilityId)) {
+        for(String availabilityStr: dbString.split(",")) {
+            int availabilityId = -1;
+
+            try {
+                availabilityId = Integer.parseInt(availabilityStr);
+            } catch(NumberFormatException e) {
+                // Some devices seem to just use strings.
+                if (availabilityStr.equals("AVAILABILITY_BUSY")) {
+                    availabilityId = CalendarContract.Events.AVAILABILITY_BUSY;
+                } else if (availabilityStr.equals("AVAILABILITY_FREE")) {
+                    availabilityId = CalendarContract.Events.AVAILABILITY_FREE;
+                } else if (availabilityStr.equals("AVAILABILITY_TENTATIVE")) {
+                    availabilityId = CalendarContract.Events.AVAILABILITY_TENTATIVE;
+                }
+            }
+
+            switch(availabilityId) {
                 case CalendarContract.Events.AVAILABILITY_BUSY:
                     availabilitiesStrings.pushString("busy");
                     break;
@@ -1150,8 +1195,10 @@ public class CalendarEvents extends ReactContextBaseJavaModule {
             promise.resolve("authorized");
         } else if (!permissionRequested) {
             promise.resolve("undetermined");
+        } else if(this.shouldShowRequestPermissionRationale()) {
+            promise.resolve("denied"); 
         } else {
-            promise.resolve("denied");
+            promise.resolve("restricted");
         }
     }
 
@@ -1213,6 +1260,27 @@ public class CalendarEvents extends ReactContextBaseJavaModule {
         }
     }
 
+    @ReactMethod
+    public void removeCalendar(final String CalendarID, final Promise promise) {
+        if (this.haveCalendarReadWritePermissions()) {
+            try {
+                Thread thread = new Thread(new Runnable(){
+                    @Override
+                    public void run() {
+                        boolean successful = removeCalendar(CalendarID);
+                        promise.resolve(successful);
+                    }
+                });
+                thread.start();
+
+            } catch (Exception e) {
+                promise.reject("error removing calendar", e.getMessage());
+            }
+        } else {
+            promise.reject("remove calendar error", "you don't have permissions to remove a calendar");
+        }
+
+    }
     @ReactMethod
     public void saveEvent(final String title, final ReadableMap details, final ReadableMap options, final Promise promise) {
         if (this.haveCalendarReadWritePermissions()) {

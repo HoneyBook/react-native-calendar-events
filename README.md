@@ -129,6 +129,22 @@ Returns: **Promise**
 
 <br/>
 
+### removeCalendar
+Removes a calendar.
+
+```javascript
+RNCalendarEvents.removeCalendar(id)
+```
+
+Arguments:
+ - id: String - The id of the calendar to remove.
+ 
+Returns: **Promise**
+ - fulfilled: Bool - Successful
+ - rejected: Error
+
+<br/>
+
 ### findEventById
 Find calendar event by id.
 Returns a promise with fulfilled found events.
@@ -155,8 +171,8 @@ RNCalendarEvents.fetchAllEvents(startDate, endDate, calendars)
 ```
 
 Arguments:
- - startDate: Date - The start date of the range of events fetched.
- - endDate: Date - The end date of the range of events fetched.
+ - startDate: String - The start date of the range of events fetched.
+ - endDate: String - The end date of the range of events fetched.
  - calendars: Array - List of calendar id strings to specify calendar events. Defaults to all calendars if empty.
 
 Returns: **Promise**  
@@ -215,12 +231,12 @@ Returns: **Promise**
 | **id***  | String  | Unique id for the calendar event. | ✓ | ✓ |
 | **calendarId****   | String           | Unique id for the calendar where the event will be saved. Defaults to the device's default calendar. | ✓ | ✓ |
 | **title**           | String           | The title for the calendar event. | ✓ | ✓ |
-| **startDate**       | Date             | The start date of the calendar event in ISO format. | ✓ | ✓ |
-| **endDate**         | Date             | The end date of the calendar event in ISO format. | ✓ | ✓ |
+| **startDate**       | String             | The start date of the calendar event in ISO format. | ✓ | ✓ |
+| **endDate**         | String             | The end date of the calendar event in ISO format. | ✓ | ✓ |
 | **allDay**          | Bool             | Indicates whether the event is an all-day event. | ✓ | ✓ |
 | **recurrence**      | String           | The simple recurrence frequency of the calendar event `daily`, `weekly`, `monthly`, `yearly` or none. | ✓ | ✓ |
 | [**recurrenceRule**](#recurrence-rule) **  | Object           | The events recurrence settings. | ✓ | ✓ |
-| **occurrenceDate***  | Date | The original occurrence date of an event if it is part of a recurring series. | ✓ |  |
+| **occurrenceDate***  | String | The original occurrence date of an event if it is part of a recurring series. | ✓ |  |
 | **isDetached**      | Bool        | Indicates whether an event is a detached instance of a repeating event. | ✓ |  |
 | **url**             | String           | The url associated with the calendar event. | ✓ |  |
 | **location**        | String           | The location associated with the calendar event. | ✓ | ✓ |
@@ -229,6 +245,7 @@ Returns: **Promise**
 | [**alarms**](#alarms)          | Array            | The alarms associated with the calendar event, as an array of alarm objects. | ✓ | ✓ |
 | [**attendees**](#attendees)*   | Array            | The attendees of the event, including the organizer. | ✓ | ✓ |
 | [**calendar**](#calendar)*    | Object      | The calendar containing the event.| ✓ | ✓ |
+| **skipAndroidTimezone**    | Bool      | Skip the process of setting automatic timezone on android|  | ✓ |
 
 
 ### Calendar
@@ -258,7 +275,7 @@ Returns: **Promise**
 | Property        | Type            | Description |  iOS | Android |
 | :--------------- | :---------------- | :----------- | :-----------: | :-----------: |
 | **frequency**     | String           | Event recurring frequency. Allowed values are `daily`, `weekly`, `monthly`, `yearly`. | ✓ | ✓ |
-| **endDate**       | Date             | Event recurring end date. This overrides occurrence. | ✓ | ✓ |
+| **endDate**       | String             | Event recurring end date. This overrides occurrence. | ✓ | ✓ |
 | **occurrence**    | Number           | Number of event occurrences. | ✓ | ✓ |
 | **interval**      | Number           | The interval between events of this recurrence. | ✓ | ✓ |
 
@@ -267,7 +284,7 @@ Returns: **Promise**
 
 | Property        | Type            | Description | iOS | Android |
 | :--------------- | :------------------| :----------- | :-----------: | :-----------: |
-| **date**           | Date or Number    | If a Date is given, an alarm will be set with an absolute date. If a Number is given, an alarm will be set with a relative offset (in minutes) from the start date. | ✓ | ✓ |
+| **date**           | String or Number    | If a String is given, an alarm will be set with an absolute date. If a Number is given, an alarm will be set with a relative offset (in minutes) from the start date. | ✓ | ✓ |
 | [**structuredLocation**](#alarm-structuredlocation) | Object             | The location to trigger an alarm. | ✓ |  |
 
 
@@ -284,7 +301,7 @@ Returns: **Promise**
 ### Options
 | Property        | Type            | Description |  iOS | Android |
 | :--------------- | :---------------- | :----------- | :-----------: | :-----------: |
-| **exceptionDate**   | Date           | The start date of a recurring event's exception instance. Used for updating single event in a recurring series | ✓ | ✓ |
+| **exceptionDate**   | String           | The start date of a recurring event's exception instance. Used for updating single event in a recurring series | ✓ | ✓ |
 | **futureEvents**   | Bool            | If `true` the update will span all future events. If `false` it only update the single instance.  | ✓ |  |
 
 ### Calendar options
